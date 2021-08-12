@@ -256,7 +256,6 @@ canned
 freshly
 all
 lactose
-human
 sauce
 topping
 beans
@@ -288,7 +287,6 @@ frosted
 calorie
 topped
 battered
-c
 sauteed
 roasted
 lunch
