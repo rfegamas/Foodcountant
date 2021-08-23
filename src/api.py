@@ -31,9 +31,8 @@ def calculate_occurence(query_tokens, name_tokens):
 
     return occurence / len(name_tokens)
 
+
 # Helper method to retrieve foods by name
-
-
 def get_food_nutrition_by_name(name):
     foods = food_src[food_src[MAIN_FOOD_DESCRIPTION].str.contains(
         name, na=False, case=False)]
@@ -82,13 +81,15 @@ def get_food_nutrition_by_name(name):
     return food
 
 
+# Homepage
 @app.route("/", methods=["GET"])
 def home():
     return "<h1>FoodCountant</h1><p>An accountant, but for your food</p>"
 
 
-@app.route("/get-lacking-nutrition")
-def get_lacking_nutrition():
+# Get lacking nutrition API
+@app.route("/get-lacking-nutrients")
+def get_lacking_nutrients():
     food_diary = request.args.getlist("food_diary")
     gender = request.args.get("gender")
     age = int(request.args.get("age"))
@@ -129,6 +130,7 @@ def get_lacking_nutrition():
     return jsonify(lacking_nutrition)
 
 
+# Get food by nutrients API
 @app.route("/get-foods-by-nutrients", methods=["GET"])
 def get_foods_by_nutrients():
     nutrients = request.args.getlist("nutrients", None)
