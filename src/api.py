@@ -3,6 +3,7 @@ import math
 import pandas as pd
 
 from flask import request, jsonify
+from flask_cors import CORS
 from nltk.tokenize import word_tokenize
 
 FOOD_FILE = "../data/fndds_nutrition.xlsx"
@@ -19,6 +20,7 @@ minimal_intake = pd.read_excel(MINIMAL_INTAKE_FILE)
 stopwords = open("../data/stopwords.txt").read().splitlines()
 
 app = flask.Flask(__name__)
+CORS(app, support_credentials=True)
 app.config["DEBUG"] = True
 
 
@@ -34,16 +36,17 @@ def calculate_occurence(query_tokens, name_tokens):
 
 # Helper method to retrieve foods by name
 def get_food_nutrition_by_name(name):
+    query = name if not name.endswith("/") else name[:-1]
+
     foods = food_src[food_src[MAIN_FOOD_DESCRIPTION].str.contains(
-        name, na=False, case=False)]
+        query, na=False, case=False)]
 
     food_names = foods[MAIN_FOOD_DESCRIPTION]
-    query_tokens = [word for word in word_tokenize(name) if word.isalnum()]
+    query_tokens = [word for word in word_tokenize(query) if word.isalnum()]
 
     percent_dict = {}
     mean = 0.0
 
-    temp_list = []
     for index, food in foods.iterrows():
         name_tokens = [word for word in word_tokenize(
             food[MAIN_FOOD_DESCRIPTION]) if word.isalnum()]
@@ -51,15 +54,11 @@ def get_food_nutrition_by_name(name):
         filtered_name_tokens = [
             word.lower() for word in name_tokens if not word.lower() in stopwords]
 
-        if(len(filtered_name_tokens) == 0):
-            temp_list.append(food[MAIN_FOOD_DESCRIPTION])
-
         occurence = calculate_occurence(query_tokens, filtered_name_tokens)
         percent_dict[index] = occurence
 
         mean += occurence
 
-    print(temp_list)
     mean /= len(food_names) + 1
     accepted_idx = []
     for index, percent in percent_dict.items():
@@ -71,7 +70,7 @@ def get_food_nutrition_by_name(name):
         [FOOD_CODE, MAIN_FOOD_DESCRIPTION], axis=1)
     mean = pruned_accepted_foods.mean()
 
-    food = {FOOD_NAME: name}
+    food = {FOOD_NAME: query}
     for nutrition, value in mean.items():
         if math.isnan(value):
             mean[nutrition] = 0.0
@@ -137,7 +136,15 @@ def get_foods_by_nutrients():
 
     result = food_src
     for nutrition in nutrients:
-        result = result[result[nutrition] > 0]
+        query = nutrition if not nutrition.endswith("/") else nutrition[:-1]
+
+        if query == "":
+            if len(nutrients) == 1:
+                return jsonify([])
+
+            continue
+
+        result = result[result[query] > 0]
 
     result.drop([FOOD_CODE, MAIN_FOOD_DESCRIPTION], axis=1)
     result.sort_values(nutrients, ascending=False, inplace=True)
